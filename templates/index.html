@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>X(Twitter)動画ダウンローダ</title>
+    <title>X(Twitter)・TikTok動画ダウンローダー</title>
     <style>
         body { font-family: sans-serif; padding: 20px; }
         input[type="text"] { width: 100%; padding: 8px; }
@@ -11,13 +11,11 @@
     </style>
 </head>
 <body>
-    <h1>X(Twitter) 動画ダウンロード</h1>
-
     <input type="text" id="url" placeholder="https://x.com/...">
 
     <label>
         <input type="checkbox" id="replace_x" checked>
-        X.com を twitter.com に置換する（推奨）
+        URLのX.comをtwitter.comに置換する（推奨、yt-dlpの仕様）
     </label>
 
     <button onclick="download()">ダウンロード</button>
