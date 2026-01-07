@@ -4,9 +4,10 @@ import os
 import re
 import tempfile
 import threading
+from flask_cors import CORS
 
 app = Flask(__name__, template_folder="../templates")
-
+CORS(app)
 # 直近のファイルパスを保持
 LAST_FILE_PATH = None
 
