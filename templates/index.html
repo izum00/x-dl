@@ -23,24 +23,30 @@
     <button onclick="download()">ダウンロード</button>
 
     <pre id="result"></pre>
+<script>
+async function download() {
+    const url = document.getElementById("url").value;
+    const replaceX = document.getElementById("replace_x").checked;
 
-    <script>
-        async function download() {
-            const url = document.getElementById("url").value;
-            const replaceX = document.getElementById("replace_x").checked;
+    const res = await fetch("/api/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            url: url,
+            replace_x: replaceX
+        })
+    });
 
-            const res = await fetch("/api/download", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    url: url,
-                    replace_x: replaceX
-                })
-            });
+    const data = await res.json();
 
-            const data = await res.json();
-            document.getElementById("result").textContent = JSON.stringify(data, null, 2);
-        }
-    </script>
+    if (data.status === "ok" && data.download_url) {
+        // 自動でダウンロード開始
+        window.location.href = data.download_url;
+    } else {
+        document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+    }
+}
+</script>
+
 </body>
 </html>
