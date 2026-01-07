@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>X(Twitter)動画ダウンローダ</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        input[type="text"] { width: 100%; padding: 8px; }
+        button { padding: 10px 16px; margin-top: 10px; }
+        label { display: block; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>X(Twitter) 動画ダウンロード</h1>
+
+    <input type="text" id="url" placeholder="https://x.com/...">
+
+    <label>
+        <input type="checkbox" id="replace_x" checked>
+        X.com を twitter.com に置換する（推奨）
+    </label>
+
+    <button onclick="download()">ダウンロード</button>
+
+    <pre id="result"></pre>
+
+    <script>
+        async function download() {
+            const url = document.getElementById("url").value;
+            const replaceX = document.getElementById("replace_x").checked;
+
+            const res = await fetch("/api/download", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    url: url,
+                    replace_x: replaceX
+                })
+            });
+
+            const data = await res.json();
+            document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+        }
+    </script>
+</body>
+</html>
