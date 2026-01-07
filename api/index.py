@@ -1,10 +1,13 @@
-from flask import Flask, request, jsonify, render_template
-import yt_dlp  # ← ここが必須（yt-dlp パッケージ）
+from flask import Flask, request, jsonify, render_template, send_file
+import yt_dlp
 import os
 import re
 import tempfile
 
 app = Flask(__name__, template_folder="../templates")
+
+# 直近のファイルパスを保持（簡易版）
+LAST_FILE_PATH = None
 
 
 def normalize_url(url: str, replace_x: bool = True) -> str:
@@ -20,6 +23,8 @@ def index():
 
 @app.route("/api/download", methods=["POST"])
 def download_api():
+    global LAST_FILE_PATH
+
     data = request.json
     url = data.get("url")
     replace_x = data.get("replace_x", True)
@@ -42,13 +47,26 @@ def download_api():
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
 
+        LAST_FILE_PATH = filename
+
         return jsonify({
             "status": "ok",
-            "filename": os.path.basename(filename)
+            "filename": os.path.basename(filename),
+            "download_url": "/api/file"
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/file", methods=["GET"])
+def get_file():
+    global LAST_FILE_PATH
+
+    if not LAST_FILE_PATH or not os.path.exists(LAST_FILE_PATH):
+        return jsonify({"error": "file not found"}), 404
+
+    return send_file(LAST_FILE_PATH, as_attachment=True)
 
 
 # Vercel用
