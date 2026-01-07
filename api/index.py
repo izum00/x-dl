@@ -53,7 +53,7 @@ def download_api():
 
     ydl_opts = {
         "outtmpl": os.path.join(tmp_dir, "%(title)s.%(ext)s"),
-        "format": "bv*+ba/b",
+        "format": "best",
         "quiet": True,
     }
 
