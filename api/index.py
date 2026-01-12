@@ -9,8 +9,6 @@ from flask_cors import CORS
 app = Flask(__name__, template_folder="../templates")
 CORS(app)
 
-LAST_FILE_PATH = None
-
 
 def normalize_url(url: str, replace_x: bool = True) -> str:
     if replace_x:
@@ -18,12 +16,14 @@ def normalize_url(url: str, replace_x: bool = True) -> str:
     return url
 
 
-def delete_file_later(path: str, delay: int = 120):
+def delete_dir_later(path: str, delay: int = 120):
     def _delete():
         try:
             if os.path.exists(path):
-                os.remove(path)
-                print(f"[AUTO DELETE] deleted: {path}")
+                for f in os.listdir(path):
+                    os.remove(os.path.join(path, f))
+                os.rmdir(path)
+                print(f"[AUTO DELETE] deleted dir: {path}")
         except Exception as e:
             print(f"[AUTO DELETE ERROR] {e}")
 
@@ -37,8 +37,6 @@ def index():
 
 @app.route("/api/download", methods=["POST"])
 def download_api():
-    global LAST_FILE_PATH
-
     data = request.json or {}
     url = data.get("url")
     replace_x = data.get("replace_x", True)
@@ -50,12 +48,9 @@ def download_api():
     url = normalize_url(url, replace_x)
     tmp_dir = tempfile.mkdtemp()
 
-    # FFmpegを使わない前提のフォーマット指定
     if audio_only == 1:
-        # 音声のみ
         format_selector = "bestaudio[ext=m4a]/bestaudio"
     else:
-        # ① 音声付き動画 → ② 動画のみ
         format_selector = (
             "best[ext=mp4][acodec!=none]/"
             "bestvideo[ext=mp4]/"
@@ -65,7 +60,7 @@ def download_api():
     ydl_opts = {
         "outtmpl": os.path.join(tmp_dir, "%(title)s.%(ext)s"),
         "format": format_selector,
-        "merge_output_format": None,   # ← FFmpeg禁止
+        "merge_output_format": None,  # FFmpeg禁止
         "quiet": True,
         "no_warnings": True,
         "http_headers": {
@@ -80,31 +75,18 @@ def download_api():
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
+            filepath = ydl.prepare_filename(info)
 
-        LAST_FILE_PATH = filename
-        delete_file_later(filename, delay=60)
+        delete_dir_later(tmp_dir, delay=60)
 
-        return jsonify({
-            "status": "ok",
-            "filename": os.path.basename(filename),
-            "download_url": "/api/file",
-            "audio_only": audio_only,
-            "expire_seconds": 60
-        })
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=os.path.basename(filepath)
+        )
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/file", methods=["GET"])
-def get_file():
-    global LAST_FILE_PATH
-
-    if not LAST_FILE_PATH or not os.path.exists(LAST_FILE_PATH):
-        return jsonify({"error": "file not found or expired"}), 404
-
-    return send_file(LAST_FILE_PATH, as_attachment=True)
 
 
 # Vercel用
