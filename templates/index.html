@@ -86,7 +86,6 @@
 </p>
 
 <pre id="result"></pre>
-
 <script>
 async function download() {
     const url = document.getElementById("url").value.trim();
@@ -106,23 +105,31 @@ async function download() {
             })
         });
 
-        const data = await res.json();
-
-        if (data.status === "ok" && data.download_url) {
-            // 自動ダウンロード開始
-            window.location.href = data.download_url;
-            document.getElementById("result").textContent =
-                "ダウンロードを開始しました: " + data.filename;
-        } else {
-            document.getElementById("result").textContent =
-                JSON.stringify(data, null, 2);
+        if (!res.ok) {
+            throw new Error(res.status);
         }
+
+        const blob = await res.blob();
+        const a = document.createElement("a");
+        const objectUrl = URL.createObjectURL(blob);
+
+        a.href = objectUrl;
+        a.download = "";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        URL.revokeObjectURL(objectUrl);
+
+        document.getElementById("result").textContent =
+            "ダウンロードを開始しました";
     } catch (e) {
         document.getElementById("result").textContent =
             "通信エラー: " + e;
     }
 }
 </script>
+
 
 </body>
 </html>
